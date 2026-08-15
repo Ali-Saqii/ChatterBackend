@@ -31,14 +31,11 @@ module.exports = {
 //Mark: Login User
 
 const loginUser = async (identifier, password) => {
-    // Find the user by username or email
-      console.log('Received identifier:', identifier);
-  console.log('Received password:', password);
+    // Find the user by username or email 
     const user = await User.findOne({ $or: [{ username: identifier }, { email: identifier }] }).select('+passwordHash');
     if (!user) {
         throw new ApiError(401, 'Invalid username/email or password');
     }
-  console.log('User found:', user ? user.email : 'NO USER FOUND');
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
