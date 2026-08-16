@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/user.model");
+const User = require("../models/User");
 const apiError = require("../utils/apiError");
 const asyncHandler = require("../utils/asyncHandler");
 
@@ -26,3 +26,5 @@ const protect = asyncHandler(async (req, res, next) => {
     next();
 
 });
+
+module.exports = { protect };

@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    avatarPublicId: {
+  type: String,
+  default: '',
+},
   },
   {
     timestamps: { createdAt: true, updatedAt: false },
