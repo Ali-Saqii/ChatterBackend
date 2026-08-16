@@ -27,7 +27,6 @@ const uploadToCloudinary = (fileBuffer) => {
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
-        console.log(result)
       }
     );
     stream.end(fileBuffer);

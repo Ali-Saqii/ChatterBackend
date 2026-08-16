@@ -38,15 +38,14 @@ const updatePassword = asyncHandler(async (req, res) => {
 });
 // upload pic
 const changeProfilePicture = asyncHandler(async (req, res) => {
-    console.log("controller hit")
   if (!req.file) {
     return res.status(400).json(new apiResponse(400, null, 'No image file provided'));
   }
 
-  const user = await updateProfilePicture(req.user._id, req.file.buffer);
+  const user = await userService.updateProfilePicture(req.user._id, req.file.buffer);
 
   res.status(200).json(
-    new piResponse(200, { avatarURL: user.avatarURL }, 'Profile picture updated successfully')
+    new apiResponse(200, { avatarURL: user.avatarURL }, 'Profile picture updated successfully')
   );
 });
 
