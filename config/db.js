@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 // const config = require('./config');
-const dbgr = require('debug')('development:mongoose');
+const dbgr = require('debug')('development:Chatter');
 
 mongoose.connect(`${process.env.MONGODB_URI}`)
 .then(() => {
