@@ -10,21 +10,23 @@ const protect = asyncHandler(async (req, res, next) => {
         token = authHeader.split(" ")[1];
     }
     if (!token) {
-        return next(new apiError("Not authorized, no token", 401));
+        return next(new apiError(401, "Not authorized, no token"));
     }
+    let user;
+
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-       user = await User.findById(decoded.id).select("-password");
+        user = await User.findById(decoded.id).select("-password");
     } catch (error) {
-        return next(new apiError("Not authorized, token failed", 401));
+        return next(new apiError(401, "Not authorized, token failed"));
     }
     if (!user) {
-        return next(new apiError("Not authorized, user not found", 401));
+        return next(new apiError(401, "Not authorized, user not found"));
     }
 
     req.user = user;
     next();
-
 });
+
 
 module.exports = { protect };
