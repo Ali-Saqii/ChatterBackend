@@ -48,9 +48,24 @@ const changeProfilePicture = asyncHandler(async (req, res) => {
     new apiResponse(200, { avatarURL: user.avatarURL }, 'Profile picture updated successfully')
   );
 });
+// @desc    Update user profile info
+const updateProfile = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { fullName, username, bio } = req.body;
 
+  if (!userId) {
+    throw new apiError(401,'User not found');
+  }
+
+  const updatedUser = await userService.updateProfile(userId, { fullName, username, bio });
+
+  res.status(200).json(
+    new apiResponse(200, updatedUser, 'Profile updated successfully', true)
+  );
+});
 module.exports = {
     deleteAccount,
     updatePassword,
     changeProfilePicture,
+    updateProfile,
 };
