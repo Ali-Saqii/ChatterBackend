@@ -63,9 +63,27 @@ const updateProfile = asyncHandler(async (req, res) => {
     new apiResponse(200, updatedUser, 'Profile updated successfully', true)
   );
 });
+
+// @desc    Get user profile info
+const getUserProfile = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  if (!userId) {
+    throw new apiError(401,'User not found');
+  }
+
+  const userProfile = await userService.getUserProfile(userId);
+
+  res.status(200).json(
+    new apiResponse(200, userProfile, 'User profile retrieved successfully', true)
+  );
+});
+
 module.exports = {
     deleteAccount,
     updatePassword,
     changeProfilePicture,
     updateProfile,
+    getUserProfile,
 };
+

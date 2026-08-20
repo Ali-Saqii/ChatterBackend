@@ -75,9 +75,18 @@ const updateProfile = async (userId, { fullName, username, bio }) => {
   return user;
 };
 
+const getUserProfile = async (userId) => {
+  const user = await User.findById(userId).select('-passwordHash -__v -createdAt -updatedAt -avatarPublicId');
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  return user;
+};
+
 module.exports = { 
     updatePassword ,
     uploadToCloudinary,
     updateProfilePicture,
     updateProfile,
+    getUserProfile,
 };

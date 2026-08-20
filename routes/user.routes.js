@@ -11,4 +11,6 @@ router.put('/updatePassword', protect, controllers.updatePassword);
 router.patch('/profilePicture', protect, upload.single('avatar'), controllers.changeProfilePicture);
 // @route   PUT /api/user/updateProfile
 router.put('/updateProfile', protect, controllers.updateProfile);
+// @route   GET /api/user/profile
+router.get('/profile', protect, controllers.getUserProfile);
 module.exports = router;
