@@ -52,8 +52,41 @@ const updateProfilePicture = async (userId, fileBuffer) => {
   await user.save();
   return user;
 };
+
+// update profile info
+const updateProfile = async (userId, { fullName, username, bio }) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  
+  if (fullName !== undefined) user.fullName = fullName;
+  if (bio !== undefined) user.bio = bio;
+    if (username && username !== user.username) {
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            throw new ApiError(400, 'Username is already taken');
+        }
+        user.username = username;
+    }
+
+  await user.save();
+  return user;
+};
+
+const getUserProfile = async (userId) => {
+  const user = await User.findById(userId).select('-passwordHash -__v -createdAt -updatedAt -avatarPublicId');
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  return user;
+};
+
 module.exports = { 
     updatePassword ,
     uploadToCloudinary,
     updateProfilePicture,
+    updateProfile,
+    getUserProfile,
 };

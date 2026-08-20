@@ -38,6 +38,14 @@ const userSchema = new mongoose.Schema(
   type: String,
   default: '',
 },
+postsCount: {
+  type: Number,
+  default: 0,
+},
+friendsCount: {
+  type: Number,
+  default: 0,
+},
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

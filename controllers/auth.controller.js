@@ -20,7 +20,15 @@ const login = asyncHabdler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, { token }, 'User logged in successfully'));
 });
 
+const forgotPasswordHandler = asyncHabdler(async (req, res) => {
+  const { email } = req.body;
+
+  await authService.forgotPassword(email);
+
+  res.status(200).json(new ApiResponse(200, null, 'A new password has been sent to your email'));
+});
 module.exports = {
     register,
     login,
+    forgotPasswordHandler,
 };

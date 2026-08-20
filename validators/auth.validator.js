@@ -43,9 +43,21 @@ const updatePasswordSchema = Joi.object({
     'string.max': 'New password must be under 72 characters',
   }),
 });
-
+const updateProfileSchema = Joi.object({
+  fullName: Joi.string().trim().min(2).max(50).allow('').optional(),
+  username: Joi.string().trim().alphanum().min(3).max(30).allow('').optional(),
+  bio: Joi.string().max(160).allow('').optional(),
+});
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string().trim().lowercase().email().required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Please enter a valid email address',
+  }),
+});
 module.exports = {
     registerSchema,
     loginSchema,
     updatePasswordSchema,
+    updateProfileSchema,
+    forgotPasswordSchema,
 };

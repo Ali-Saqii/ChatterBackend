@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const ApiError = require('../utils/ApiError');
+const { generateRandomPassword } = require('../utils/generateRandomPassword');
+const transporter = require('../config/email');
 
 //Mark: Register User
 const registerUser = async (fullName, username, email, password) => {
@@ -45,7 +47,32 @@ const loginUser = async (identifier, password) => {
     return user;
 };
 
+
+
+const forgotPassword = async (email) => {
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(404, 'No account found with this email');
+  }
+
+  const newPassword = generateRandomPassword();
+
+  const salt = await bcrypt.genSalt(10);
+  user.passwordHash = await bcrypt.hash(newPassword, salt);
+  await user.save();
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: user.email,
+    subject: 'Your Chatter password has been reset',
+    text: `Your new password is: ${newPassword}\n\nPlease log in and change it as soon as possible.`,
+  });
+
+  return true;
+};
 module.exports = {
     registerUser,
     loginUser,
+    forgotPassword,
 };
