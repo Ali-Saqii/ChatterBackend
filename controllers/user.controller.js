@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const apiError = require('../utils/apiError');
+const apiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const apiResponse = require('../utils/ApiResponse');
 const User = require('../models/User');
