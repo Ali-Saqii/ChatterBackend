@@ -15,10 +15,12 @@ app.use(express.urlencoded({ extended: true }))
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const friendRoutes = require('./routes/friend.routes');
+const postRoutes = require('./routes/post.routes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/friend', friendRoutes);
+app.use('/api/post', postRoutes);
 app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5000;
