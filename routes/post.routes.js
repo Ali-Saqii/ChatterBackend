@@ -6,6 +6,6 @@ const validate = require('../middleware/validate.middleware');
 const { createPostSchema } = require('../validators/post.validator');
 const { create } = require('../controllers/post.controller');
 
-router.post('/createPost', protect, upload.single('media'), validate(createPostSchema), create);
+router.post('/createPost', protect, upload.single('media'),validate(createPostSchema), create);
 
 module.exports = router;

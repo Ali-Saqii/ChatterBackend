@@ -19,7 +19,6 @@ const uploadMediaToCloudinary = (fileBuffer, resourceType) => {
 
 // Create a new post
 const createPost = async (authorId, { text, file }) => {
-
     if (!text && !file) {
         throw new ApiError(400, 'Post must contain text or media');
     }
@@ -35,6 +34,7 @@ let mediaURL = '';
         mediaURL = result.secure_url;
         mediaPublicId = result.public_id;
     }
+
   const post = await Post.create({
     author: authorId,
     text: text || '',
@@ -42,7 +42,6 @@ let mediaURL = '';
     mediaPublicId,
     mediaType,
   });
-
     return await post.save();
 }
 

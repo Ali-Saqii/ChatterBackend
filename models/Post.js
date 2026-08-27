@@ -37,12 +37,4 @@ const postSchema = new mongoose.Schema(
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
-// A post must have EITHER text OR media (or both) — never completely empty
-postSchema.pre('validate', function (next) {
-  if (!this.text && this.mediaType === 'none') {
-    return next(new Error('A post must contain either text or media'));
-  }
-  next();
-});
-
 module.exports = mongoose.model('Post', postSchema);
