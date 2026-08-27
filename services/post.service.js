@@ -44,7 +44,27 @@ let mediaURL = '';
   });
     return await post.save();
 }
+// delete post
 
+const deletePost = async (userId,postId) => {
+ const post = await Post.findById(postId);
+  if (!post) {
+    throw new ApiError(404, 'Post not found');
+  }
+  if (post.author.toString() !== userId) {
+    throw new ApiError(403, 'You are not authorized to delete this post');
+  }
+
+  if (post.mediaPublicId) {
+    await cloudinary.uploader.destroy(post.mediaPublicId, {
+      resource_type: post.mediaType,
+    });
+  }
+    await post.deleteOne();
+    await User.findByIdAndUpdate(userId, { $inc: { postsCount: -1 } });
+    return true;
+}
 module.exports = {
-    createPost
+    createPost,
+    deletePost
 };
