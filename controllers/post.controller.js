@@ -1,6 +1,7 @@
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 const { createPost, deletePost,getUserPosts } = require('../services/post.service');
+const { getFeed } = require('../services/feed.service');
 
 const create = asyncHandler(async (req, res) => {  
   const { text } = req.body;
@@ -29,7 +30,23 @@ const deletepost = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, 'Post deleted successfully'));
 });
 
+// my post
 
+const MyPosts = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
 
+  const result = await getUserPosts(req.user._id, page, limit);
+  res.status(200).json(new ApiResponse(200, result, 'My posts fetched successfully'));
+});
+// feed 
 
-module.exports = { create, deletepost, getPostsByUser, };
+const getfeed = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+
+  const result = await getFeed(page, limit);
+  res.status(200).json(new ApiResponse(200, result, 'Feed fetched successfully'));
+})
+
+module.exports = { create, deletepost, getPostsByUser, MyPosts,getfeed };
