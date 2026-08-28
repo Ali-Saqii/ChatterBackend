@@ -97,48 +97,109 @@ const removeFriendRequest = async (userId, requestId) => {
         throw new ApiError(404, 'Friend request not found');
     }
     await friendRequest.deleteOne();
-    const user = await User.findByIdAndUpdate(userId, { $inc: { friendsCount: -1 } });
-    const friend = await User.findByIdAndUpdate(requestId, { $inc: { friendsCount: -1 } });
+    await User.findByIdAndUpdate(userId, { $inc: { friendsCount: -1 } });
+    await User.findByIdAndUpdate(requestId, { $inc: { friendsCount: -1 } });
     return true;
 };
 
-// Mark: Get all friends
-const getFriends = async (userId) => {
-    const friends = await FriendRequest.find({
-        status: 'accepted',
-        $or: [
-            { sender: userId },
-            { receiver: userId }
-        ]
-    }).populate('sender receiver', 'fullName username avatarURL');
+const getFriends = async (userId, page = 1, limit = 10) => {
+    const skip = (page - 1) * limit;
 
+    const [friends, total] = await Promise.all([
+        FriendRequest.find({
+            status: 'accepted',
+            $or: [
+                { sender: userId },
+                { receiver: userId }
+            ]
+        })
+            .populate('sender receiver', 'fullName username avatarURL')
+            .skip(skip)
+            .limit(limit),
+        FriendRequest.countDocuments({
+            status: 'accepted',
+            $or: [
+                { sender: userId },
+                { receiver: userId }
+            ]
+        })
+    ]);
 
-    return friends.map(friend => {
-        if (friend.sender._id.toString() === userId.toString()) {
-            friend.friend = friend.receiver;
-        } else {
-            friend.friend = friend.sender;
-        }
+    const results = friends.map(friend => {
+        const otherUser = friend.sender._id.toString() === userId.toString()
+            ? friend.receiver
+            : friend.sender;
+        return otherUser;
     });
 
+    return {
+        friends: results,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
 };
 
 // Mark: Get all friend requests
-const getFriendRequests = async (userId) => {
-    const friendRequests = await FriendRequest.find({
-        status: 'pending',
-        receiver: userId
-    }).populate('sender', 'fullName username avatarURL');
-    return friendRequests;
+const getFriendRequests = async (userId, page = 1, limit = 10) => {
+    const skip = (page - 1) * limit;
+
+    const [friendRequests, total] = await Promise.all([
+        FriendRequest.find({
+            status: 'pending',
+            receiver: userId
+        })
+            .populate('sender', 'fullName username avatarURL')
+            .skip(skip)
+            .limit(limit),
+        FriendRequest.countDocuments({
+            status: 'pending',
+            receiver: userId
+        })
+    ]);
+
+    return {
+        requests: friendRequests,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
 };
+
 // MARK: Get all sent friend requests
-const getSentFriendRequests = async (userId) => {
-    const sentFriendRequests = await FriendRequest.find({
-        status: 'pending',
-        sender: userId
-    }).populate('receiver', 'fullName username avatarURL');
-    return sentFriendRequests;
-}
+const getSentFriendRequests = async (userId, page = 1, limit = 10) => {
+    const skip = (page - 1) * limit;
+
+    const [sentFriendRequests, total] = await Promise.all([
+        FriendRequest.find({
+            status: 'pending',
+            sender: userId
+        })
+            .populate('receiver', 'fullName username avatarURL')
+            .skip(skip)
+            .limit(limit),
+        FriendRequest.countDocuments({
+            status: 'pending',
+            sender: userId
+        })
+    ]);
+
+    return {
+        requests: sentFriendRequests,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
+};
 
 module.exports = {
     sendFriendRequest,

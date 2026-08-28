@@ -1,0 +1,94 @@
+const cloudinary = require('../config/cloudinary');
+const Post = require('../models/Post');
+const User = require('../models/User');
+const ApiError = require('../utils/ApiError');
+
+const uploadMediaToCloudinary = (fileBuffer, resourceType) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'chatter/posts', resource_type: resourceType },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(fileBuffer);
+  });
+};
+
+
+// Create a new post
+const createPost = async (authorId, { text, file }) => {
+    if (!text && !file) {
+        throw new ApiError(400, 'Post must contain text or media');
+    }
+
+let mediaURL = '';
+  let mediaPublicId = '';
+  let mediaType = 'none';
+
+    if (file) {
+        const isVideo = file.mimetype.startsWith('video/');
+        mediaType = isVideo ? 'video' : 'image';
+        const result = await uploadMediaToCloudinary(file.buffer, mediaType);
+        mediaURL = result.secure_url;
+        mediaPublicId = result.public_id;
+    }
+
+  const post = await Post.create({
+    author: authorId,
+    text: text || '',
+    mediaURL,
+    mediaPublicId,
+    mediaType,
+  });
+    return await post.save();
+}
+// delete post
+
+const deletePost = async (userId,postId) => {
+ const post = await Post.findById(postId);
+  if (!post) {
+    throw new ApiError(404, 'Post not found');
+  }
+  if (post.author.toString() !== userId) {
+    throw new ApiError(403, 'You are not authorized to delete this post');
+  }
+
+  if (post.mediaPublicId) {
+    await cloudinary.uploader.destroy(post.mediaPublicId, {
+      resource_type: post.mediaType,
+    });
+  }
+    await post.deleteOne();
+    await User.findByIdAndUpdate(userId, { $inc: { postsCount: -1 } });
+    return true;
+}
+
+// get user's posts
+
+const getUserPosts = async (userId,page=1,limit=10) => {
+  const skip = (page - 1) * limit;
+  const posts = await Post.find({ author: userId })
+  .sort({ createdAt: -1 })
+  .skip(skip)
+  .limit(limit)
+  .populate('author', '_id username fullName avatarURL');
+
+    const total = await Post.countDocuments({ author: userId });
+    return {
+        posts,
+        pagenation: {
+            page,
+            total: total,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
+};
+
+module.exports = {
+    createPost,
+    deletePost,
+    getUserPosts
+};
