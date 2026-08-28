@@ -1,6 +1,6 @@
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
-const { createPost } = require('../services/post.service');
+const { createPost, deletePost,getUserPosts } = require('../services/post.service');
 
 const create = asyncHandler(async (req, res) => {  
   const { text } = req.body;
@@ -11,10 +11,25 @@ const create = asyncHandler(async (req, res) => {
   res.status(201).json(new ApiResponse(201, { post }, 'Post created successfully'));
 });
 
+
+
+// Get userPosts
+const getPostsByUser = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+
+  const result = await getUserPosts(req.params.userId, page, limit);
+
+  res.status(200).json(new ApiResponse(200, result, 'User posts fetched successfully'));
+});
 // delete post
-const deletePost = asyncHandler(async (req, res) => {
+const deletepost = asyncHandler(async (req, res) => {
   const { postId } = req.params;
   await deletePost(req.user._id, postId);
   res.status(200).json(new ApiResponse(200, null, 'Post deleted successfully'));
 });
-module.exports = { create, deletePost };
+
+
+
+
+module.exports = { create, deletepost, getPostsByUser, };

@@ -64,7 +64,31 @@ const deletePost = async (userId,postId) => {
     await User.findByIdAndUpdate(userId, { $inc: { postsCount: -1 } });
     return true;
 }
+
+// get user's posts
+
+const getUserPosts = async (userId,page=1,limit=10) => {
+  const skip = (page - 1) * limit;
+  const posts = await Post.find({ author: userId })
+  .sort({ createdAt: -1 })
+  .skip(skip)
+  .limit(limit)
+  .populate('author', '_id username fullName avatarURL');
+
+    const total = await Post.countDocuments({ author: userId });
+    return {
+        posts,
+        pagenation: {
+            page,
+            total: total,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
+};
+
 module.exports = {
     createPost,
-    deletePost
+    deletePost,
+    getUserPosts
 };
