@@ -56,7 +56,7 @@ const getCommentsByPostController = asyncHandler(async (req, res) => {
 
 
 // @ like a post
-const likeCommentController = asyncHandler(async (req, res) => {
+const likePostController = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const postId = req.params.postId;
 
@@ -73,7 +73,7 @@ const likeCommentController = asyncHandler(async (req, res) => {
 });
 
 // @ unlike a post
-const unlikeCommentController = asyncHandler(async (req, res) => {
+const unlikePostController = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const postId = req.params.postId;
 
@@ -91,4 +91,4 @@ const unlikeCommentController = asyncHandler(async (req, res) => {
     return new apiResponse(200, null, 'Post unliked successfully');
 });
 
-module.exports = { createCommentController, deleteCommentController, getCommentsByPostController, likeCommentController, unlikeCommentController };
+module.exports = { createCommentController, deleteCommentController, getCommentsByPostController, likePostController, unlikePostController };
