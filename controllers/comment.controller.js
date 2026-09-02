@@ -2,10 +2,10 @@ const asyncHandler = require('../utils/asyncHandler');
 const comment = require('../models/Comment');
 const ApiError = require('../utils/ApiError');
 const Post = require('../models/Post');
+const like = require('../models/Like');
+const User = require('../models/User');
 const apiResponse = require('../utils/ApiResponse');
 const { createComment, deleteComment, getCommentsByPost } = require('../services/comments.service');
-
-
 // @ create a new comment
 const createCommentController = asyncHandler(async (req, res) => {
     const userId = req.user._id;
@@ -16,6 +16,11 @@ const createCommentController = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Post ID and content are required');
     }
     
+    const post = await Post.findById(postId);
+    if (!post) {
+        throw new ApiError(404, 'Post not found');
+    }
+
     const comment = await createComment(userId, postId, content);
     return new apiResponse(201, comment, 'Comment created successfully');
 });
@@ -48,4 +53,42 @@ const getCommentsByPostController = asyncHandler(async (req, res) => {
     const comments = await getCommentsByPost(postId, page, limit);
     return new apiResponse(200, comments, 'Comments fetched successfully');
 });
-module.exports = { createCommentController, deleteCommentController, getCommentsByPostController };
+
+
+// @ like a post
+const likeCommentController = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const postId = req.params.postId;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+        throw new ApiError(404, 'Post not found');
+    }
+
+    const like = await like.create({ user: userId, Post: postId });
+    await like.save();
+    post.likesCount += 1;
+    await post.save();
+    return new apiResponse(201, like, 'Post liked successfully');
+});
+
+// @ unlike a post
+const unlikeCommentController = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const postId = req.params.postId;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+        throw new ApiError(404, 'Post not found');
+    }
+
+    const like = await like.findOneAndDelete({ user: userId, Post: postId });
+    if (!like) {
+        throw new ApiError(404, 'Like not found');
+    }
+    post.likesCount -= 1;
+    await post.save();
+    return new apiResponse(200, null, 'Post unliked successfully');
+});
+
+module.exports = { createCommentController, deleteCommentController, getCommentsByPostController, likeCommentController, unlikeCommentController };
