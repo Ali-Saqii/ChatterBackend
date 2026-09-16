@@ -1,6 +1,8 @@
 const cloudinary = require('../config/cloudinary');
 const Post = require('../models/Post');
 const User = require('../models/User');
+const Comment = require('../models/Comment');
+const Like = require('../models/Like');
 const ApiError = require('../utils/ApiError');
 
 const uploadMediaToCloudinary = (fileBuffer, resourceType) => {
@@ -42,6 +44,7 @@ let mediaURL = '';
     mediaPublicId,
     mediaType,
   });
+    await User.findByIdAndUpdate(authorId, { $inc: { postsCount: 1 } });
     return await post.save();
 }
 // delete post
@@ -51,7 +54,7 @@ const deletePost = async (userId,postId) => {
   if (!post) {
     throw new ApiError(404, 'Post not found');
   }
-  if (post.author.toString() !== userId) {
+  if (post.author.toString() !== userId.toString()) {
     throw new ApiError(403, 'You are not authorized to delete this post');
   }
 
@@ -60,8 +63,12 @@ const deletePost = async (userId,postId) => {
       resource_type: post.mediaType,
     });
   }
-    await post.deleteOne();
-    await User.findByIdAndUpdate(userId, { $inc: { postsCount: -1 } });
+    await Promise.all([
+      Comment.deleteMany({ post: post._id }),
+      Like.deleteMany({ post: post._id }),
+      post.deleteOne(),
+      User.findByIdAndUpdate(userId, { $inc: { postsCount: -1 } }),
+    ]);
     return true;
 }
 
@@ -78,7 +85,7 @@ const getUserPosts = async (userId,page=1,limit=10) => {
     const total = await Post.countDocuments({ author: userId });
     return {
         posts,
-        pagenation: {
+        pagination: {
             page,
             total: total,
             limit,

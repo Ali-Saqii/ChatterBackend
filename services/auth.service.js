@@ -53,10 +53,14 @@ const forgotPassword = async (email) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    throw new ApiError(404, 'No account found with this email');
+    return true;
   }
 
   const newPassword = generateRandomPassword();
+
+  const salt = await bcrypt.genSalt(10);
+  user.passwordHash = await bcrypt.hash(newPassword, salt);
+  await user.save();
 
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
@@ -64,10 +68,6 @@ const forgotPassword = async (email) => {
     subject: 'Your Chatter password has been reset',
     text: `Your new password is: ${newPassword}\n\nPlease log in and change it as soon as possible.`,
   });
-
-  const salt = await bcrypt.genSalt(10);
-  user.passwordHash = await bcrypt.hash(newPassword, salt);
-  await user.save();
 
   return true;
 };

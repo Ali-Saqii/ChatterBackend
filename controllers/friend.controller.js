@@ -4,6 +4,15 @@ const friendService = require('../services/friend.service');
 const ApiError = require('../utils/ApiError');
 const mongoose = require('mongoose');
 
+const getPagination = (query) => {
+    const page = Number.parseInt(query.page, 10) || 1;
+    const limit = Number.parseInt(query.limit, 10) || 10;
+    if (page < 1 || limit < 1 || limit > 100) {
+        throw new ApiError(400, 'Page must be at least 1 and limit must be between 1 and 100');
+    }
+    return { page, limit };
+};
+
 const sendFriendRequest = asyncHandler(async (req, res) => {
     const senderId = req.user._id;
     const receiverId = req.params.receiverId;
@@ -24,7 +33,7 @@ const acceptFriendRequest = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid request ID');
     }
 
-     await friendService.acceptFriendRequest(requestId);
+     await friendService.acceptFriendRequest(req.user._id, requestId);
 
     res.status(200).json(new ApiResponse(200, null, 'Friend request accepted successfully'));
 });
@@ -50,7 +59,7 @@ const deleteFriend = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid user ID or friend ID');
     }
 
-     await friendService.deleteFriend(userId, friendId);
+     await friendService.removeFriendRequest(userId, friendId);
 
     res.status(200).json(new ApiResponse(200, null, 'Friend deleted successfully'));
 });
@@ -68,8 +77,7 @@ const cancelFriendRequest = asyncHandler(async (req, res) => {
 
 const getFriendsList = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const { page, limit } = getPagination(req.query);
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
         throw new ApiError(400, 'Invalid user ID');
@@ -81,8 +89,7 @@ const getFriendsList = asyncHandler(async (req, res) => {
 });
 const getFriendRequests = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const { page, limit } = getPagination(req.query);
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
         throw new ApiError(400, 'Invalid user ID');
@@ -94,14 +101,13 @@ const getFriendRequests = asyncHandler(async (req, res) => {
 });
 const getSentRequests = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const { page, limit } = getPagination(req.query);
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
         throw new ApiError(400, 'Invalid user ID');
     }
 
-    const sentRequests = await friendService.getSentRequests(userId, page, limit);
+    const sentRequests = await friendService.getSentFriendRequests(userId, page, limit);
 
     res.status(200).json(new ApiResponse(200, sentRequests, 'Sent friend requests retrieved successfully'));
 });
@@ -116,4 +122,3 @@ module.exports = {
     getSentRequests,
     cancelFriendRequest
 };
-

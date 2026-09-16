@@ -3,14 +3,16 @@ const router = express.Router();
 const { protect } = require('../middleware/auth.middleware');
 const controllers = require('../controllers/user.controller');
 const upload = require('../middleware/upload.middleware')
+const validate = require('../middleware/validate.middleware');
+const { updatePasswordSchema, updateProfileSchema } = require('../validators/auth.validator');
 // @route   DELETE /api/user/delete
 router.delete('/delete', protect, controllers.deleteAccount);
 // @route   
-router.put('/updatePassword', protect, controllers.updatePassword);
+router.put('/updatePassword', protect, validate(updatePasswordSchema), controllers.updatePassword);
 // @upload pic
 router.patch('/profilePicture', protect, upload.single('avatar'), controllers.changeProfilePicture);
 // @route   PUT /api/user/updateProfile
-router.put('/updateProfile', protect, controllers.updateProfile);
+router.put('/updateProfile', protect, validate(updateProfileSchema), controllers.updateProfile);
 // @route   GET /api/user/profile
 router.get('/profile', protect, controllers.getUserProfile);
 module.exports = router;

@@ -5,14 +5,18 @@ const Post = require('../models/Post');
 
 const createComment = async (userId, postId, content) => {
 
-    if (!content) {
+    if (typeof content !== 'string') {
+        throw new ApiError(400, 'Content is required');
+    }
+    const normalizedContent = content.trim();
+    if (!normalizedContent) {
         throw new ApiError(400, 'Content is required');
     };
 
     const comment = new Comments({
         post: postId,
         user: userId,
-        content: content
+        content: normalizedContent
     });
 
     await comment.save();
@@ -31,7 +35,7 @@ const deleteComment = async (commentId, userId) => {
         throw new ApiError(404, 'Comment not found');
     };
 
-    if (comment.user.toString() !== userId) {
+    if (comment.user.toString() !== userId.toString()) {
         throw new ApiError(403, 'You are not authorized to delete this comment');
     };
 

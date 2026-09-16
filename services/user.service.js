@@ -2,6 +2,10 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const cloudinary = require('../config/cloudinary');
+const Post = require('../models/Post');
+const Comment = require('../models/Comment');
+const Like = require('../models/Like');
+const FriendRequest = require('../models/Friends');
 
 const updatePassword = async (userId, { oldPassword, newPassword }) => {
     const user = await User.findById(userId).select('+passwordHash');
@@ -18,6 +22,56 @@ const updatePassword = async (userId, { oldPassword, newPassword }) => {
     user.passwordHash = newPasswordHash;
     await user.save();
     return user;
+};
+
+const deleteAccount = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  const posts = await Post.find({ author: userId }).select('mediaPublicId mediaType');
+  const authoredComments = await Comment.find({ user: userId }).select('post');
+  const acceptedFriendships = await FriendRequest.find({
+    status: 'accepted',
+    $or: [{ sender: userId }, { receiver: userId }],
+  }).select('sender receiver');
+  await Promise.all(
+    posts
+      .filter((post) => post.mediaPublicId)
+      .map((post) => cloudinary.uploader.destroy(post.mediaPublicId, {
+        resource_type: post.mediaType,
+      }))
+  );
+
+  const postIds = posts.map((post) => post._id);
+  const commentCounts = authoredComments.reduce((counts, comment) => {
+    const postId = comment.post.toString();
+    counts[postId] = (counts[postId] || 0) + 1;
+    return counts;
+  }, {});
+  const otherFriendIds = acceptedFriendships.map((friendship) => (
+    friendship.sender.toString() === userId.toString()
+      ? friendship.receiver
+      : friendship.sender
+  ));
+  await Promise.all([
+    ...Object.entries(commentCounts).map(([postId, count]) => (
+      Post.findByIdAndUpdate(postId, { $inc: { commentsCount: -count } })
+    )),
+    ...otherFriendIds.map((friendId) => (
+      User.findByIdAndUpdate(friendId, { $inc: { friendsCount: -1 } })
+    )),
+    Comment.deleteMany({ $or: [{ user: userId }, { post: { $in: postIds } }] }),
+    Like.deleteMany({ $or: [{ user: userId }, { post: { $in: postIds } }] }),
+    Post.deleteMany({ author: userId }),
+    FriendRequest.deleteMany({ $or: [{ sender: userId }, { receiver: userId }] }),
+  ]);
+
+  if (user.avatarPublicId) {
+    await cloudinary.uploader.destroy(user.avatarPublicId);
+  }
+  await user.deleteOne();
 };
 // @ Clondinary upload
 const uploadToCloudinary = (fileBuffer) => {
@@ -85,6 +139,7 @@ const getUserProfile = async (userId) => {
 
 module.exports = { 
     updatePassword ,
+    deleteAccount,
     uploadToCloudinary,
     updateProfilePicture,
     updateProfile,

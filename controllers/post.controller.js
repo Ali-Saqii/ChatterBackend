@@ -2,6 +2,16 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 const { createPost, deletePost,getUserPosts } = require('../services/post.service');
 const { getFeed } = require('../services/feed.service');
+const ApiError = require('../utils/ApiError');
+
+const getPagination = (query) => {
+  const page = Number.parseInt(query.page, 10) || 1;
+  const limit = Number.parseInt(query.limit, 10) || 10;
+  if (page < 1 || limit < 1 || limit > 100) {
+    throw new ApiError(400, 'Page must be at least 1 and limit must be between 1 and 100');
+  }
+  return { page, limit };
+};
 
 const create = asyncHandler(async (req, res) => {  
   const { text } = req.body;
@@ -16,8 +26,7 @@ const create = asyncHandler(async (req, res) => {
 
 // Get userPosts
 const getPostsByUser = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const { page, limit } = getPagination(req.query);
 
   const result = await getUserPosts(req.params.userId, page, limit);
 
@@ -33,8 +42,7 @@ const deletepost = asyncHandler(async (req, res) => {
 // my post
 
 const MyPosts = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const { page, limit } = getPagination(req.query);
 
   const result = await getUserPosts(req.user._id, page, limit);
   res.status(200).json(new ApiResponse(200, result, 'My posts fetched successfully'));
@@ -42,8 +50,7 @@ const MyPosts = asyncHandler(async (req, res) => {
 // feed 
 
 const getfeed = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const { page, limit } = getPagination(req.query);
 
   const result = await getFeed(page, limit);
   res.status(200).json(new ApiResponse(200, result, 'Feed fetched successfully'));

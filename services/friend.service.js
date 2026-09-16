@@ -6,7 +6,7 @@ const ApiError = require('../utils/ApiError');
 const sendFriendRequest = async (senderId, receiverId) => {
     const sender = await User.findById(senderId);
     const receiver = await User.findById(receiverId);
-    if (senderId === receiverId) {
+    if (senderId.toString() === receiverId.toString()) {
         throw new ApiError(400, 'You cannot send a friend request to yourself');
     }
 
@@ -35,8 +35,8 @@ const sendFriendRequest = async (senderId, receiverId) => {
 };
 
 // MARK: accept friend request
-const acceptFriendRequest = async (requestId) => {
-    const friendRequest = await FriendRequest.findById(requestId);
+const acceptFriendRequest = async (userId, requestId) => {
+    const friendRequest = await FriendRequest.findOne({ _id: requestId, receiver: userId });
     if (!friendRequest) {
         throw new ApiError(404, 'Friend request not found');
     }
@@ -45,15 +45,10 @@ const acceptFriendRequest = async (requestId) => {
     }
     friendRequest.status = 'accepted';
     await friendRequest.save();
-
-    const sender = await User.findById(friendRequest.sender);
-    const receiver = await User.findById(friendRequest.receiver);
-
-    await User.findByIdAndUpdate(friendRequest.sender, { $inc: { friendsCount: 1 } });
-    await User.findByIdAndUpdate(friendRequest.receiver, { $inc: { friendsCount: 1 } });
-
-    await sender.save();
-    await receiver.save();
+    await Promise.all([
+        User.findByIdAndUpdate(friendRequest.sender, { $inc: { friendsCount: 1 } }),
+        User.findByIdAndUpdate(friendRequest.receiver, { $inc: { friendsCount: 1 } }),
+    ]);
 };
 
 // MARK: decline friend request
@@ -97,8 +92,10 @@ const removeFriendRequest = async (userId, requestId) => {
         throw new ApiError(404, 'Friend request not found');
     }
     await friendRequest.deleteOne();
-    await User.findByIdAndUpdate(userId, { $inc: { friendsCount: -1 } });
-    await User.findByIdAndUpdate(requestId, { $inc: { friendsCount: -1 } });
+    await User.updateMany(
+        { _id: { $in: [userId, requestId] } },
+        { $inc: { friendsCount: -1 } }
+    );
     return true;
 };
 

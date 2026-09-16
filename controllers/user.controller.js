@@ -1,8 +1,6 @@
-const mongoose = require('mongoose');
 const apiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const apiResponse = require('../utils/ApiResponse');
-const User = require('../models/User');
 const userService = require('../services/user.service');
 
 
@@ -10,13 +8,13 @@ const userService = require('../services/user.service');
 
 
 // @desc    Delete user account
-const deleteAccount = asyncHandler(async (req, res, next) => {
+const deleteAccount = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     if (!userId) {
-        return next(new apiError('User not found', 404));
+        throw new apiError(404, 'User not found');
     }
-    await User.findByIdAndDelete(userId);
-    res.status(200).json(new apiResponse(200,'User account deleted successfully', null));
+    await userService.deleteAccount(userId);
+    res.status(200).json(new apiResponse(200, null, 'User account deleted successfully'));
 });
 
 // @desc    Update user password
@@ -27,14 +25,14 @@ const updatePassword = asyncHandler(async (req, res) => {
     
 
     if (!userId) {
-        return res.status(404).json(new apiResponse(404, 'User not found', null));
+        return res.status(404).json(new apiResponse(404, null, 'User not found'));
     }
     if (!oldPassword || !newPassword) {
-        return res.status(400).json(new apiResponse(400, 'Old password and new password are required', null));
+        return res.status(400).json(new apiResponse(400, null, 'Old password and new password are required'));
     }
 
     await userService.updatePassword(userId, { oldPassword, newPassword });
-    res.status(200).json(new apiResponse(200, 'Password updated successfully', null));
+    res.status(200).json(new apiResponse(200, null, 'Password updated successfully'));
 });
 // upload pic
 const changeProfilePicture = asyncHandler(async (req, res) => {
@@ -60,7 +58,7 @@ const updateProfile = asyncHandler(async (req, res) => {
   const updatedUser = await userService.updateProfile(userId, { fullName, username, bio });
 
   res.status(200).json(
-    new apiResponse(200, updatedUser, 'Profile updated successfully', true)
+    new apiResponse(200, updatedUser, 'Profile updated successfully')
   );
 });
 
@@ -75,7 +73,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
   const userProfile = await userService.getUserProfile(userId);
 
   res.status(200).json(
-    new apiResponse(200, userProfile, 'User profile retrieved successfully', true)
+    new apiResponse(200, userProfile, 'User profile retrieved successfully')
   );
 });
 
@@ -86,4 +84,3 @@ module.exports = {
     updateProfile,
     getUserProfile,
 };
-

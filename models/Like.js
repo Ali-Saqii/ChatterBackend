@@ -6,11 +6,13 @@ const likeSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    Post: {
+    post: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
         required: true
     }
 });
+
+likeSchema.index({ user: 1, post: 1 }, { unique: true });
 
 module.exports = mongoose.model('Like', likeSchema);
