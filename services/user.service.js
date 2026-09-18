@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
@@ -137,6 +138,31 @@ const getUserProfile = async (userId) => {
   return user;
 };
 
+
+const getUserByUsername = async (identifier) => {
+  if (typeof identifier !== 'string' || !identifier.trim()) {
+    throw new ApiError(400, 'Username is required');
+  }
+
+  const normalizedIdentifier = identifier.trim();
+  const escapedIdentifier = normalizedIdentifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const queryConditions = [
+    { username: normalizedIdentifier },
+    { username: { $regex: new RegExp(`^${escapedIdentifier}$`, 'i') } }
+  ];
+
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    queryConditions.push({ _id: normalizedIdentifier });
+  }
+
+  const user = await User.findOne({ $or: queryConditions })
+    .select('-passwordHash -__v -createdAt -updatedAt -avatarPublicId');
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  return user;
+};
+
 module.exports = { 
     updatePassword ,
     deleteAccount,
@@ -144,4 +170,5 @@ module.exports = {
     updateProfilePicture,
     updateProfile,
     getUserProfile,
+    getUserByUsername,
 };
