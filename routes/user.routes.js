@@ -15,4 +15,6 @@ router.patch('/profilePicture', protect, upload.single('avatar'), controllers.ch
 router.put('/updateProfile', protect, validate(updateProfileSchema), controllers.updateProfile);
 // @route   GET /api/user/profile
 router.get('/profile', protect, controllers.getUserProfile);
+// @route   GET /api/user/:username
+router.get('/:username', protect, controllers.getUserByUsername);
 module.exports = router;

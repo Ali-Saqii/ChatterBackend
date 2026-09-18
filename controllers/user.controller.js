@@ -77,10 +77,27 @@ const getUserProfile = asyncHandler(async (req, res) => {
   );
 });
 
+
+// @desc    Get user profile by username or ID
+const getUserByUsername = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+
+  if (!username) {
+    throw new apiError(400, 'Username is required');
+  }
+
+  const userProfile = await userService.getUserByUsername(username);
+
+  res.status(200).json(
+    new apiResponse(200, userProfile, 'User profile retrieved successfully')
+  );
+});
+
 module.exports = {
     deleteAccount,
     updatePassword,
     changeProfilePicture,
     updateProfile,
     getUserProfile,
+    getUserByUsername,
 };
