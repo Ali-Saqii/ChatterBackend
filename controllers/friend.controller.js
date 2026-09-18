@@ -13,6 +13,74 @@ const getPagination = (query) => {
     return { page, limit };
 };
 
+const searchPeople = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const searchTerm = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const { page, limit } = getPagination(req.query);
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new ApiError(400, 'Invalid user ID');
+    }
+    if (!searchTerm) {
+        throw new ApiError(400, 'Search query is required');
+    }
+    if (searchTerm.length > 100) {
+        throw new ApiError(400, 'Search query must not exceed 100 characters');
+    }
+
+    const people = await friendService.searchPeople(userId, searchTerm, page, limit);
+
+    res.status(200).json(new ApiResponse(200, people, 'People found successfully'));
+});
+
+const getSearchParams = (req) => {
+    const searchTerm = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (!searchTerm) {
+        throw new ApiError(400, 'Search query is required');
+    }
+    if (searchTerm.length > 100) {
+        throw new ApiError(400, 'Search query must not exceed 100 characters');
+    }
+    return { searchTerm, ...getPagination(req.query) };
+};
+
+const searchFriends = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { searchTerm, page, limit } = getSearchParams(req);
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new ApiError(400, 'Invalid user ID');
+    }
+
+    const friends = await friendService.searchFriends(userId, searchTerm, page, limit);
+    res.status(200).json(new ApiResponse(200, friends, 'Friends found successfully'));
+});
+
+const searchFriendRequests = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { searchTerm, page, limit } = getSearchParams(req);
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new ApiError(400, 'Invalid user ID');
+    }
+
+    const requests = await friendService.searchFriendRequests(userId, searchTerm, page, limit);
+    res.status(200).json(new ApiResponse(200, requests, 'Friend requests found successfully'));
+});
+
+const getAllUsers = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { page, limit } = getPagination(req.query);
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new ApiError(400, 'Invalid user ID');
+    }
+
+    const users = await friendService.getAllUsers(userId, page, limit);
+
+    res.status(200).json(new ApiResponse(200, users, 'Users retrieved successfully'));
+});
+
 const sendFriendRequest = asyncHandler(async (req, res) => {
     const senderId = req.user._id;
     const receiverId = req.params.receiverId;
@@ -113,6 +181,10 @@ const getSentRequests = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+    searchFriends,
+    searchFriendRequests,
+    getAllUsers,
+    searchPeople,
     sendFriendRequest,
     acceptFriendRequest,
     declineFriendRequest,
