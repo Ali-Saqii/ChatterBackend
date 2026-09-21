@@ -45,7 +45,7 @@ let mediaURL = '';
     mediaType,
   });
     await User.findByIdAndUpdate(authorId, { $inc: { postsCount: 1 } });
-    return await post.save();
+    return post;
 }
 // delete post
 

@@ -2,12 +2,13 @@ const mongoose = require('mongoose');
 // const config = require('./config');
 const dbgr = require('debug')('development:Chatter');
 
-mongoose.connect(`${process.env.MONGODB_URI}`)
-.then(() => {
+const connectDb = async () => {
+    if (!process.env.MONGODB_URI) {
+        throw new Error('MONGODB_URI is not configured');
+    }
+    await mongoose.connect(process.env.MONGODB_URI);
     dbgr('Connected to MongoDB');
-})
-.catch((err) => {
-    dbgr('Error connecting to MongoDB', err);
-});
+};
 
 module.exports = mongoose.connection;
+module.exports.connectDb = connectDb;

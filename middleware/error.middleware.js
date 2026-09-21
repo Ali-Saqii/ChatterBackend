@@ -3,6 +3,14 @@ const ApiError = require('../utils/ApiError');
 const errorMiddleware = (err, req, res, next) => {
   let error = err;
 
+  if (error.name === 'CastError') {
+    error = new ApiError(400, `Invalid ${error.path || 'resource'} ID`);
+  } else if (error.code === 11000) {
+    error = new ApiError(409, 'A resource with these values already exists');
+  } else if (error.name === 'MulterError' && error.code === 'LIMIT_FILE_SIZE') {
+    error = new ApiError(413, 'Uploaded file exceeds the 50 MB limit');
+  }
+
   // Agar error ApiError instance nahi hai (jaise Mongoose ya koi aur library ka raw error),
   // to usay bhi same shape mein convert kar do taake response consistent rahe
   if (!(error instanceof ApiError)) {

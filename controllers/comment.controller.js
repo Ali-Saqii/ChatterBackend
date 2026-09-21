@@ -4,6 +4,13 @@ const Post = require('../models/Post');
 const Like = require('../models/Like');
 const ApiResponse = require('../utils/ApiResponse');
 const { createComment, deleteComment, getCommentsByPost } = require('../services/comments.service');
+const mongoose = require('mongoose');
+
+const validateObjectId = (value, name) => {
+    if (!mongoose.Types.ObjectId.isValid(value)) {
+        throw new ApiError(400, `Invalid ${name} ID`);
+    }
+};
 // @ create a new comment
 const createCommentController = asyncHandler(async (req, res) => {
     const userId = req.user._id;
@@ -13,6 +20,7 @@ const createCommentController = asyncHandler(async (req, res) => {
     if (!postId || !content) {
         throw new ApiError(400, 'Post ID and content are required');
     }
+    validateObjectId(postId, 'post');
     
     const post = await Post.findById(postId);
     if (!post) {
@@ -27,6 +35,7 @@ const createCommentController = asyncHandler(async (req, res) => {
 const deleteCommentController = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const commentId = req.params.commentId;
+    validateObjectId(commentId, 'comment');
 
     const isDeleted = await deleteComment(commentId, userId);
     if (!isDeleted) {
@@ -40,6 +49,7 @@ const deleteCommentController = asyncHandler(async (req, res) => {
 // @ get comments for a post
 const getCommentsByPostController = asyncHandler(async (req, res) => {
     const postId = req.params.postId;
+    validateObjectId(postId, 'post');
     const page = Number.parseInt(req.query.page, 10) || 1;
     const limit = Number.parseInt(req.query.limit, 10) || 10;
     if (page < 1 || limit < 1 || limit > 100) {
@@ -60,19 +70,23 @@ const getCommentsByPostController = asyncHandler(async (req, res) => {
 const likePostController = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const postId = req.params.postId;
+    validateObjectId(postId, 'post');
 
     const post = await Post.findById(postId);
     if (!post) {
         throw new ApiError(404, 'Post not found');
     }
 
-    const existingLike = await Like.findOne({ user: userId, post: postId });
-    if (existingLike) {
-        throw new ApiError(409, 'Post already liked');
+    let createdLike;
+    try {
+        createdLike = await Like.create({ user: userId, post: postId });
+    } catch (error) {
+        if (error.code === 11000) {
+            throw new ApiError(409, 'Post already liked');
+        }
+        throw error;
     }
-    const createdLike = await Like.create({ user: userId, post: postId });
-    post.likesCount += 1;
-    await post.save();
+    await Post.findByIdAndUpdate(postId, { $inc: { likesCount: 1 } });
     res.status(201).json(new ApiResponse(201, createdLike, 'Post liked successfully'));
 });
 
@@ -80,18 +94,16 @@ const likePostController = asyncHandler(async (req, res) => {
 const unlikePostController = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const postId = req.params.postId;
-
-    const post = await Post.findById(postId);
-    if (!post) {
-        throw new ApiError(404, 'Post not found');
-    }
+    validateObjectId(postId, 'post');
 
     const deletedLike = await Like.findOneAndDelete({ user: userId, post: postId });
     if (!deletedLike) {
         throw new ApiError(404, 'Like not found');
     }
-    post.likesCount = Math.max(0, post.likesCount - 1);
-    await post.save();
+    await Post.findOneAndUpdate(
+        { _id: postId, likesCount: { $gt: 0 } },
+        { $inc: { likesCount: -1 } }
+    );
     res.status(200).json(new ApiResponse(200, null, 'Post unliked successfully'));
 });
 

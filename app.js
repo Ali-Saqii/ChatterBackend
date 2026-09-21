@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
 const app = express();
-const path = require("path")
 const errorMiddleware = require('./middleware/error.middleware');
 
 app.use(cors());
@@ -17,7 +16,9 @@ const userRoutes = require('./routes/user.routes');
 const friendRoutes = require('./routes/friend.routes');
 const postRoutes = require('./routes/post.routes');
 const commentRoutes = require('./routes/comment.routes');
+const conversationRoutes = require('./routes/conversation.routes');
 
+app.use('/api/conversation', conversationRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/friend', friendRoutes);
@@ -25,7 +26,19 @@ app.use('/api/post', postRoutes);
 app.use('/api/comment', commentRoutes);
 app.use(errorMiddleware);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+  await db.connectDb();
+  const PORT = process.env.PORT || 5000;
+  return app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.error('Unable to start server:', error.message);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { app, startServer };

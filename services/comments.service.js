@@ -40,9 +40,14 @@ const deleteComment = async (commentId, userId) => {
     };
 
     // Decrement the commentsCount in the Post model
-    await Post.findByIdAndUpdate(comment.post, { $inc: { commentsCount: -1 } });
-
-    await Comments.findByIdAndDelete(commentId);
+    const deletedComment = await Comments.findOneAndDelete({ _id: commentId, user: userId });
+    if (!deletedComment) {
+        throw new ApiError(404, 'Comment not found');
+    }
+    await Post.findOneAndUpdate(
+        { _id: comment.post, commentsCount: { $gt: 0 } },
+        { $inc: { commentsCount: -1 } }
+    );
     return true;
 };
 

@@ -6,8 +6,8 @@ const asyncHandler = require("../utils/asyncHandler");
 const protect = asyncHandler(async (req, res, next) => {
     let token;
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer")) {
-        token = authHeader.split(" ")[1];
+    if (authHeader && /^Bearer\s+\S+$/i.test(authHeader)) {
+        token = authHeader.replace(/^Bearer\s+/i, '').trim();
     }
     if (!token) {
         return next(new ApiError(401, "Not authorized, no token"));

@@ -3,6 +3,7 @@ const ApiResponse = require('../utils/ApiResponse');
 const { createPost, deletePost,getUserPosts } = require('../services/post.service');
 const { getFeed } = require('../services/feed.service');
 const ApiError = require('../utils/ApiError');
+const mongoose = require('mongoose');
 
 const getPagination = (query) => {
   const page = Number.parseInt(query.page, 10) || 1;
@@ -11,6 +12,12 @@ const getPagination = (query) => {
     throw new ApiError(400, 'Page must be at least 1 and limit must be between 1 and 100');
   }
   return { page, limit };
+};
+
+const validateObjectId = (value, name) => {
+  if (!mongoose.Types.ObjectId.isValid(value)) {
+    throw new ApiError(400, `Invalid ${name} ID`);
+  }
 };
 
 const create = asyncHandler(async (req, res) => {  
@@ -35,6 +42,7 @@ const getPostsByUser = asyncHandler(async (req, res) => {
 // delete post
 const deletepost = asyncHandler(async (req, res) => {
   const { postId } = req.params;
+  validateObjectId(postId, 'post');
   await deletePost(req.user._id, postId);
   res.status(200).json(new ApiResponse(200, null, 'Post deleted successfully'));
 });
@@ -43,6 +51,7 @@ const deletepost = asyncHandler(async (req, res) => {
 
 const MyPosts = asyncHandler(async (req, res) => {
   const { page, limit } = getPagination(req.query);
+  validateObjectId(req.params.userId, 'user');
 
   const result = await getUserPosts(req.user._id, page, limit);
   res.status(200).json(new ApiResponse(200, result, 'My posts fetched successfully'));
