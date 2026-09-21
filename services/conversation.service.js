@@ -76,7 +76,59 @@ const createConversation = async (userId, participantIds, isGroup, groupName) =>
         };
     };
 
-    module.exports = {
-        createConversation,
-        getConversationsForUser,
+    const getGroupConversation = async (conversationId) => {
+        const conversation = await Conversation.findById(conversationId);
+        if (!conversation) {
+            throw new ApiError(404, 'Conversation not found');
+        }
+        if (!conversation.isGroup) {
+            throw new ApiError(400, 'This operation is only available for group conversations');
+        }
+        return conversation;
     };
+
+    const removeParticipant = async (conversationId, adminId, participantId) => {
+        const conversation = await getGroupConversation(conversationId);
+
+        if (!conversation.groupAdmin || conversation.groupAdmin.toString() !== adminId.toString()) {
+            throw new ApiError(403, 'Only the group admin can remove participants');
+        }
+        if (participantId.toString() === adminId.toString()) {
+            throw new ApiError(400, 'The group admin cannot remove themselves');
+        }
+        if (!conversation.participants.some((id) => id.toString() === participantId.toString())) {
+            throw new ApiError(404, 'User is not a participant in this group');
+        }
+
+        conversation.participants.pull(participantId);
+        await conversation.save();
+        return conversation;
+    };
+
+    const leaveGroup = async (conversationId, userId) => {
+        const conversation = await getGroupConversation(conversationId);
+
+        if (!conversation.participants.some((id) => id.toString() === userId.toString())) {
+            throw new ApiError(403, 'User is not a participant in this group');
+        }
+
+        conversation.participants.pull(userId);
+        if (conversation.groupAdmin && conversation.groupAdmin.toString() === userId.toString()) {
+            conversation.groupAdmin = conversation.participants[0] || null;
+        }
+
+        if (conversation.participants.length === 0) {
+            await Conversation.deleteOne({ _id: conversationId });
+            return null;
+        }
+
+        await conversation.save();
+        return conversation;
+    };
+
+        module.exports = {
+            createConversation,
+            getConversationsForUser,
+            removeParticipant,
+            leaveGroup,
+        };
