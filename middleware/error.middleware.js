@@ -5,6 +5,8 @@ const errorMiddleware = (err, req, res, next) => {
 
   if (error.name === 'CastError') {
     error = new ApiError(400, `Invalid ${error.path || 'resource'} ID`);
+  } else if (error.name === 'ValidationError') {
+    error = new ApiError(400, error.message, Object.values(error.errors || {}));
   } else if (error.code === 11000) {
     error = new ApiError(409, 'A resource with these values already exists');
   } else if (error.name === 'MulterError' && error.code === 'LIMIT_FILE_SIZE') {

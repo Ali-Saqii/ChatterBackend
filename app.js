@@ -17,8 +17,10 @@ const friendRoutes = require('./routes/friend.routes');
 const postRoutes = require('./routes/post.routes');
 const commentRoutes = require('./routes/comment.routes');
 const conversationRoutes = require('./routes/conversation.routes');
+const messageRoutes = require('./routes/message.routes');
 
 app.use('/api/conversation', conversationRoutes);
+app.use('/api/message', messageRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/friend', friendRoutes);

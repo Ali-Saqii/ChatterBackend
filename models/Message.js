@@ -32,7 +32,9 @@ const messageSchema = new mongoose.Schema(
 );
 messageSchema.pre('validate', function () {
   if (!this.text && !this.mediaUrl) {
-    throw new Error('Message must have either text or mediaUrl');
+    const error = new Error('Message must have either text or mediaUrl');
+    error.statusCode = 400;
+    throw error;
   }
 });
 // Speeds up "get messages for this conversation, newest first" queries
