@@ -1,3 +1,5 @@
 node_modules
 .env
 utils/generateRandomPassword.js
+API_DOCUMENTATION.md
+API_ENDPOINTS.md
