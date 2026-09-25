@@ -3,6 +3,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 const ApiError = require('../utils/ApiError');
 const messageService = require('../services/message.service');
+const { conversationRoom } = require('../sockets/message.socket');
+const { notifyMessageRecipients } = require('../services/notification.service');
 
 const validateObjectId = (value, name) => {
   if (!mongoose.Types.ObjectId.isValid(value)) {
@@ -22,6 +24,12 @@ const sendMessage = asyncHandler(async (req, res) => {
     text,
     mediaUrl,
   });
+
+  const io = req.app.get('io');
+  if (io) {
+    io.to(conversationRoom(conversationId)).emit('new_message', message.toObject());
+    await notifyMessageRecipients({ message, senderId: req.user._id, io });
+  }
 
   res.status(201).json(new ApiResponse(201, message, 'Message sent successfully'));
 });
@@ -55,6 +63,14 @@ const markMessageAsRead = asyncHandler(async (req, res) => {
     messageId,
     userId: req.user._id,
   });
+
+  const io = req.app.get('io');
+  if (io) {
+    io.to(conversationRoom(message.conversation.toString())).emit('message_read', {
+      messageId: message._id,
+      userId: req.user._id,
+    });
+  }
 
   res.status(200).json(new ApiResponse(200, message, 'Message marked as read'));
 });

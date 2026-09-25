@@ -507,6 +507,135 @@ Response: `200 OK`; `data` is `{ "requests": [...], "pagination": {...} }`.
 Each request includes a populated `receiver` (with `fullName`, `username`, and
 `avatarURL`) and a `sender` ID.
 
+## Notification endpoints
+
+Notifications are persisted for the authenticated user and are also delivered
+in realtime over Socket.IO. All notification routes require the JWT in the
+`Authorization` header.
+
+### List notifications
+
+```http
+GET /api/notification?page=1&limit=20
+Authorization: ******
+```
+
+`page` defaults to `1`, and `limit` defaults to `20` with a maximum of `100`.
+The response includes the newest notifications first, the unread count, and
+pagination metadata.
+
+```json
+{
+  "status": 200,
+  "message": "Notifications retrieved successfully",
+  "success": true,
+  "data": {
+    "notifications": [
+      {
+        "_id": "<notification-id>",
+        "recipient": "<current-user-id>",
+        "actor": {
+          "_id": "<actor-id>",
+          "fullName": "Ada Lovelace",
+          "username": "ada_lovelace",
+          "avatarURL": ""
+        },
+        "type": "friend_request",
+        "entityType": "FriendRequest",
+        "entityId": "<friend-request-id>",
+        "message": "sent you a friend request",
+        "metadata": {},
+        "readAt": null,
+        "createdAt": "2026-09-25T10:00:00.000Z",
+        "updatedAt": "2026-09-25T10:00:00.000Z"
+      }
+    ],
+    "unreadCount": 1,
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+Supported notification types are `message`, `friend_request`,
+`friend_request_accepted`, `like`, and `comment`. `metadata.conversationId`
+is included for message notifications.
+
+### Get unread count
+
+Use this endpoint when refreshing a notification badge without loading the
+notification list.
+
+```http
+GET /api/notification/unread-count
+Authorization: ******
+```
+
+Response: `200 OK`
+
+```json
+{
+  "status": 200,
+  "message": "Unread notification count retrieved successfully",
+  "success": true,
+  "data": { "unreadCount": 4 }
+}
+```
+
+### Mark one notification as read
+
+```http
+PATCH /api/notification/<notification-id>/read
+Authorization: ******
+```
+
+Response: `200 OK`; `data` contains the updated notification with a non-null
+`readAt`. A notification can only be marked read by its recipient.
+
+### Mark all notifications as read
+
+```http
+PATCH /api/notification/read-all
+Authorization: ******
+```
+
+Response:
+
+```json
+{
+  "status": 200,
+  "message": "Notifications marked as read",
+  "success": true,
+  "data": { "updatedCount": 4 }
+}
+```
+
+### Socket.IO integration
+
+Connect with the same JWT used by REST:
+
+```js
+const socket = io(API_URL, {
+  auth: { token: jwt }
+});
+```
+
+The server automatically places the authenticated socket in a private user
+room. Listen for these events:
+
+| Event | Payload | Use |
+| --- | --- | --- |
+| `notification:new` | Notification object | Insert at the top of the list and increment the badge |
+| `notification:read` | `{ notificationId, readAt }` | Update one item and decrement the badge |
+| `notification:read_all` | No payload | Set all visible notifications to read and clear the badge |
+
+Socket events are delivery hints; the REST list remains the source of truth
+after reconnecting or resuming the app.
+
 ## SwiftUI implementation notes
 
 - Store the JWT securely in Keychain rather than `UserDefaults`.

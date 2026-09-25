@@ -3,6 +3,10 @@ const ApiResponse = require('../utils/ApiResponse');
 const friendService = require('../services/friend.service');
 const ApiError = require('../utils/ApiError');
 const mongoose = require('mongoose');
+const {
+    notifyFriendRequest,
+    notifyFriendRequestAccepted,
+} = require('../services/notification.service');
 
 const getPagination = (query) => {
     const page = Number.parseInt(query.page, 10) || 1;
@@ -89,7 +93,13 @@ const sendFriendRequest = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid user ID');
     }
 
-    await friendService.sendFriendRequest(senderId, receiverId);
+    const friendRequest = await friendService.sendFriendRequest(senderId, receiverId);
+    await notifyFriendRequest({
+        recipient: receiverId,
+        actor: senderId,
+        requestId: friendRequest._id,
+        io: req.app.get('io'),
+    });
 
     res.status(201).json(new ApiResponse(201, null, 'Friend request sent successfully'));
 });
@@ -101,7 +111,13 @@ const acceptFriendRequest = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid request ID');
     }
 
-     await friendService.acceptFriendRequest(req.user._id, requestId);
+     const friendRequest = await friendService.acceptFriendRequest(req.user._id, requestId);
+     await notifyFriendRequestAccepted({
+         recipient: friendRequest.sender,
+         actor: req.user._id,
+         requestId: friendRequest._id,
+         io: req.app.get('io'),
+     });
 
     res.status(200).json(new ApiResponse(200, null, 'Friend request accepted successfully'));
 });

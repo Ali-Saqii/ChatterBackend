@@ -5,6 +5,7 @@ const Like = require('../models/Like');
 const ApiResponse = require('../utils/ApiResponse');
 const { createComment, deleteComment, getCommentsByPost } = require('../services/comments.service');
 const mongoose = require('mongoose');
+const { notifyPostActivity } = require('../services/notification.service');
 
 const validateObjectId = (value, name) => {
     if (!mongoose.Types.ObjectId.isValid(value)) {
@@ -28,6 +29,14 @@ const createCommentController = asyncHandler(async (req, res) => {
     }
 
     const createdComment = await createComment(userId, postId, content);
+    await notifyPostActivity({
+        recipient: post.author,
+        actor: userId,
+        type: 'comment',
+        entityType: 'Comment',
+        entityId: createdComment._id,
+        io: req.app.get('io'),
+    });
     res.status(201).json(new ApiResponse(201, createdComment, 'Comment created successfully'));
 });
 
@@ -87,6 +96,14 @@ const likePostController = asyncHandler(async (req, res) => {
         throw error;
     }
     await Post.findByIdAndUpdate(postId, { $inc: { likesCount: 1 } });
+    await notifyPostActivity({
+        recipient: post.author,
+        actor: userId,
+        type: 'like',
+        entityType: 'Post',
+        entityId: postId,
+        io: req.app.get('io'),
+    });
     res.status(201).json(new ApiResponse(201, createdLike, 'Post liked successfully'));
 });
 

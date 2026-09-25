@@ -293,6 +293,7 @@ const acceptFriendRequest = async (userId, requestId) => {
         User.findByIdAndUpdate(friendRequest.sender, { $inc: { friendsCount: 1 } }),
         User.findByIdAndUpdate(friendRequest.receiver, { $inc: { friendsCount: 1 } }),
     ]);
+    return friendRequest;
 };
 
 // MARK: decline friend request
