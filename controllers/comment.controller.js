@@ -35,7 +35,6 @@ const createCommentController = asyncHandler(async (req, res) => {
         type: 'comment',
         entityType: 'Comment',
         entityId: createdComment._id,
-        io: req.app.get('io'),
     });
     res.status(201).json(new ApiResponse(201, createdComment, 'Comment created successfully'));
 });
@@ -102,7 +101,6 @@ const likePostController = asyncHandler(async (req, res) => {
         type: 'like',
         entityType: 'Post',
         entityId: postId,
-        io: req.app.get('io'),
     });
     res.status(201).json(new ApiResponse(201, createdLike, 'Post liked successfully'));
 });

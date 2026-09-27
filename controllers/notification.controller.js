@@ -37,22 +37,11 @@ const markAsRead = asyncHandler(async (req, res) => {
     req.user._id
   );
   if (!notification) throw new ApiError(404, 'Notification not found');
-  const io = req.app.get('io');
-  if (io) {
-    io.to(notificationService.userRoom(req.user._id)).emit('notification:read', {
-      notificationId: notification._id,
-      readAt: notification.readAt,
-    });
-  }
   res.status(200).json(new ApiResponse(200, notification, 'Notification marked as read'));
 });
 
 const markAllAsRead = asyncHandler(async (req, res) => {
   const updatedCount = await notificationService.markAllAsRead(req.user._id);
-  const io = req.app.get('io');
-  if (io) {
-    io.to(notificationService.userRoom(req.user._id)).emit('notification:read_all');
-  }
   res.status(200).json(new ApiResponse(
     200,
     { updatedCount },

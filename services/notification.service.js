@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const Conversation = require('../models/Conversation');
+const { getIO } = require('../sockets/socket');
 
 const userRoom = (userId) => `user:${userId}`;
 
@@ -15,7 +16,6 @@ const createNotification = async ({
   entityId,
   message,
   metadata = {},
-  io,
 }) => {
   if (recipient.toString() === actor?.toString()) return null;
 
@@ -30,14 +30,15 @@ const createNotification = async ({
   });
   await notification.populate('actor', 'fullName username avatarURL');
 
-  if (io) {
-    io.to(userRoom(recipient)).emit('notification:new', serializeNotification(notification));
-  }
+  getIO().to(userRoom(recipient)).emit(
+    'notification:new',
+    serializeNotification(notification)
+  );
 
   return notification;
 };
 
-const notifyMessageRecipients = async ({ message, senderId, io }) => {
+const notifyMessageRecipients = async ({ message, senderId }) => {
   const conversation = await Conversation.findById(message.conversation).select('participants');
   if (!conversation) return [];
 
@@ -52,38 +53,34 @@ const notifyMessageRecipients = async ({ message, senderId, io }) => {
     entityId: message._id,
     message: 'sent you a new message',
     metadata: { conversationId: message.conversation },
-    io,
   })));
 };
 
-const notifyFriendRequest = ({ recipient, actor, requestId, io }) => createNotification({
+const notifyFriendRequest = ({ recipient, actor, requestId }) => createNotification({
   recipient,
   actor,
   type: 'friend_request',
   entityType: 'FriendRequest',
   entityId: requestId,
   message: 'sent you a friend request',
-  io,
 });
 
-const notifyFriendRequestAccepted = ({ recipient, actor, requestId, io }) => createNotification({
+const notifyFriendRequestAccepted = ({ recipient, actor, requestId }) => createNotification({
   recipient,
   actor,
   type: 'friend_request_accepted',
   entityType: 'FriendRequest',
   entityId: requestId,
   message: 'accepted your friend request',
-  io,
 });
 
-const notifyPostActivity = ({ recipient, actor, type, entityType, entityId, io }) => createNotification({
+const notifyPostActivity = ({ recipient, actor, type, entityType, entityId }) => createNotification({
   recipient,
   actor,
   type,
   entityType,
   entityId,
   message: type === 'like' ? 'liked your post' : 'commented on your post',
-  io,
 });
 
 const getNotifications = async (userId, page = 1, limit = 20) => {
@@ -118,6 +115,13 @@ const markAsRead = async (notificationId, userId) => {
     { new: true }
   ).populate('actor', 'fullName username avatarURL');
 
+  if (notification) {
+    getIO().to(userRoom(userId)).emit('notification:read', {
+      notificationId: notification._id,
+      readAt: notification.readAt,
+    });
+  }
+
   return notification;
 };
 
@@ -126,6 +130,7 @@ const markAllAsRead = async (userId) => {
     { recipient: userId, readAt: null },
     { $set: { readAt: new Date() } }
   );
+  getIO().to(userRoom(userId)).emit('notification:read_all');
   return result.modifiedCount;
 };
 

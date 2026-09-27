@@ -98,7 +98,6 @@ const sendFriendRequest = asyncHandler(async (req, res) => {
         recipient: receiverId,
         actor: senderId,
         requestId: friendRequest._id,
-        io: req.app.get('io'),
     });
 
     res.status(201).json(new ApiResponse(201, null, 'Friend request sent successfully'));
@@ -116,7 +115,6 @@ const acceptFriendRequest = asyncHandler(async (req, res) => {
          recipient: friendRequest.sender,
          actor: req.user._id,
          requestId: friendRequest._id,
-         io: req.app.get('io'),
      });
 
     res.status(200).json(new ApiResponse(200, null, 'Friend request accepted successfully'));

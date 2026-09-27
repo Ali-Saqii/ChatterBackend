@@ -2,11 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
-const { Server } = require('socket.io');
 const db = require('./config/db');
-const { initializeMessageSocket } = require('./sockets/message.socket');
+const { validateEnvironment } = require('./config/env');
+const { initiliseSocket } = require('./sockets/socket');
 const app = express();
 const errorMiddleware = require('./middleware/error.middleware');
+
+validateEnvironment();
 
 app.use(cors());
 app.use(express.json())
@@ -24,14 +26,9 @@ const messageRoutes = require('./routes/message.routes');
 const notificationRoutes = require('./routes/notification.routes');
 
 const httpServer = http.createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.CLIENT_URL || '*',
-  },
-});
 
+const io = initiliseSocket(httpServer);
 app.set('io', io);
-initializeMessageSocket(io);
 
 app.use('/api/conversation', conversationRoutes);
 app.use('/api/message', messageRoutes);
@@ -45,7 +42,7 @@ app.use(errorMiddleware);
 
 const startServer = async () => {
   await db.connectDb();
-  const PORT = process.env.PORT || 5000;
+  const PORT = process.env.PORT || 5001;
   return httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
