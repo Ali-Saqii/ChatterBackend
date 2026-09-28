@@ -15,7 +15,7 @@ const protect = asyncHandler(async (req, res, next) => {
     let user;
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        user = await User.findById(decoded.id).select("-password");
+        user = await User.findById(decoded.id).select("-passwordHash");
     } catch (error) {
         return next(new ApiError(401, "Not authorized, token failed"));
     }

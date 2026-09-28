@@ -45,7 +45,7 @@ const updatePasswordSchema = Joi.object({
 });
 const updateProfileSchema = Joi.object({
   fullName: Joi.string().trim().min(2).max(50).allow('').optional(),
-  username: Joi.string().trim().alphanum().min(3).max(30).allow('').optional(),
+  username: Joi.string().trim().pattern(/^[a-zA-Z0-9_]+$/).min(5).max(30).allow('').optional(),
   bio: Joi.string().max(160).allow('').optional(),
 });
 const forgotPasswordSchema = Joi.object({
