@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const helmet = require('helmet');
 const db = require('./config/db');
 const { validateEnvironment } = require('./config/env');
 const { initiliseSocket } = require('./sockets/socket');
@@ -16,6 +17,9 @@ const errorMiddleware = require('./middleware/error.middleware');
 
 validateEnvironment();
 
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet());
+}
 app.use(cors());
 
 
