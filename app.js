@@ -5,15 +5,24 @@ const cors = require('cors');
 const db = require('./config/db');
 const { validateEnvironment } = require('./config/env');
 const { initiliseSocket } = require('./sockets/socket');
+const { generalRateLimiter } = require('./middleware/rateLimit.middleware');
 const app = express();
+
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 const errorMiddleware = require('./middleware/error.middleware');
 
 validateEnvironment();
 
 app.use(cors());
+
+
+app.use("/api", generalRateLimiter);
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-
 
 // api routes
 const authRoutes = require('./routes/auth.routes');
