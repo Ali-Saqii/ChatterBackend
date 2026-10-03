@@ -51,6 +51,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/friend', friendRoutes);
 app.use('/api/post', postRoutes);
 app.use('/api/comment', commentRoutes);
+app.use('/api/ai', require('./routes/ai.routes'));
 app.use(errorMiddleware);
 
 const startServer = async () => {
