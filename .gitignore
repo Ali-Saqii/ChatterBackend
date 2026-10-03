@@ -5,3 +5,4 @@ node_modules
 utils/generateRandomPassword.js
 API_DOCUMENTATION.md
 API_ENDPOINTS.md
+API_URLS.md
